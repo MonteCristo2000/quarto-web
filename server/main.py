@@ -16,9 +16,16 @@ from game_logic import QuartoGame
 
 app = FastAPI()
 
+ALLOWED_ORIGINS = [
+    "https://quarto-web.vercel.app",
+    "https://quarto-qtst1srfe-monte-cristo.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -131,7 +138,9 @@ async def create_room():
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
-    await ws.accept()
+    # Accept from any origin — Railway/Vercel deployments have different
+    # preview URLs each time; origin filtering is handled at the CORS layer.
+    await ws.accept(headers=[(b"access-control-allow-origin", b"*")])
     room: Optional[Room] = None
     my_player: Optional[int] = None
 
