@@ -131,9 +131,7 @@ async def create_room():
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
-    # Accept from any origin — Railway/Vercel deployments have different
-    # preview URLs each time; origin filtering is handled at the CORS layer.
-    await ws.accept(headers=[(b"access-control-allow-origin", b"*")])
+    await ws.accept()
     room: Optional[Room] = None
     my_player: Optional[int] = None
 
