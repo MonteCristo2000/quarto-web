@@ -4,7 +4,6 @@ import ClockBar from "./ClockBar.jsx";
 import StatusBar from "./StatusBar.jsx";
 import WinOverlay from "./WinOverlay.jsx";
 import ScoreBar from "./ScoreBar.jsx";
-import Reactions from "./Reactions.jsx";
 import { useGame } from "../hooks/useGame.js";
 import { useClock } from "../hooks/useClock.js";
 
@@ -30,11 +29,9 @@ export default function Game({ roomCode, playerName, onLeave }) {
     opponentLeft,
     rematchWaiting,
     rematchRequested,
-    incomingReaction,
     selectPiece,
     placePiece,
     requestRematch,
-    sendReaction,
   } = useGame(roomCode, playerName);
 
   const gameMode  = settings?.game_mode  ?? "classic";
@@ -157,15 +154,6 @@ export default function Game({ roomCode, playerName, onLeave }) {
             isMyTurn={isMyTurn}
           />
 
-          {incomingReaction && (
-            <div className="reaction-toast" key={incomingReaction.emoji + incomingReaction.ts}>
-              <span className="reaction-toast__emoji">{incomingReaction.emoji}</span>
-              <span className="reaction-toast__name">
-                {names?.[String(incomingReaction.from)] || `Player ${incomingReaction.from}`}
-              </span>
-            </div>
-          )}
-
           <PieceTray
             available={available}
             canSelect={canSelect}
@@ -176,12 +164,6 @@ export default function Game({ roomCode, playerName, onLeave }) {
           />
 
           <ScoreBar scores={scores} names={names} />
-
-          <Reactions
-            onReact={sendReaction}
-            incomingReaction={incomingReaction}
-            names={names}
-          />
         </aside>
       </div>
 

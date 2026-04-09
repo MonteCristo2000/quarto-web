@@ -297,14 +297,6 @@ async def websocket_endpoint(ws: WebSocket):
                     room.start_clock(game.current_player)
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
 
-            elif msg_type == "reaction":
-                emoji = str(msg.get("emoji", ""))[:2]   # cap length, basic safety
-                if emoji:
-                    await broadcast(room,
-                        {"type": "reaction", "from": my_player, "emoji": emoji},
-                        {"type": "reaction", "from": my_player, "emoji": emoji},
-                    )
-
             elif msg_type == "rematch":
                 if not game.game_over:
                     await ws.send_json({"type": "error", "message": "Game is not over yet"})

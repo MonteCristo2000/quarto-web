@@ -21,7 +21,6 @@ export function useGame(roomCode, playerName) {
   const [rematchWaiting, setRematchWaiting] = useState(false);
   const [rematchRequested, setRematchRequested] = useState(false);
   const [scores, setScores] = useState({ "1": 0, "2": 0, draws: 0 });
-  const [incomingReaction, setIncomingReaction] = useState(null); // { from, emoji }
   const playerNumRef = useRef(playerNum);
 
   useEffect(() => {
@@ -52,11 +51,6 @@ export function useGame(roomCode, playerName) {
 
         case "rematch_requested":
           setRematchRequested(true);
-          break;
-
-        case "reaction":
-          setIncomingReaction({ from: msg.from, emoji: msg.emoji, ts: Date.now() });
-          setTimeout(() => setIncomingReaction(null), 3200);
           break;
 
         case "state":
@@ -108,10 +102,6 @@ export function useGame(roomCode, playerName) {
     send({ type: "rematch" });
   }, []);
 
-  const sendReaction = useCallback((emoji) => {
-    send({ type: "reaction", emoji });
-  }, []);
-
   return {
     joined,
     playerNum,
@@ -125,10 +115,8 @@ export function useGame(roomCode, playerName) {
     opponentLeft,
     rematchWaiting,
     rematchRequested,
-    incomingReaction,
     selectPiece,
     placePiece,
     requestRematch,
-    sendReaction,
   };
 }
