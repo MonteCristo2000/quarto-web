@@ -18,8 +18,10 @@ export function useGame(roomCode, playerName) {
   const [settings, setSettings] = useState({ game_mode: "classic", time_limit: 300 });
   const [error, setError] = useState(null);
   const [opponentLeft, setOpponentLeft] = useState(false);
-  const [rematchWaiting, setRematchWaiting] = useState(false);   // I clicked, waiting for opponent
-  const [rematchRequested, setRematchRequested] = useState(false); // opponent clicked, waiting for me
+  const [rematchWaiting, setRematchWaiting] = useState(false);
+  const [rematchRequested, setRematchRequested] = useState(false);
+  const [scores, setScores] = useState({ "1": 0, "2": 0, draws: 0 });
+  const [incomingReaction, setIncomingReaction] = useState(null); // { from, emoji }
   const playerNumRef = useRef(playerNum);
 
   useEffect(() => {
@@ -52,6 +54,11 @@ export function useGame(roomCode, playerName) {
           setRematchRequested(true);
           break;
 
+        case "reaction":
+          setIncomingReaction({ from: msg.from, emoji: msg.emoji });
+          setTimeout(() => setIncomingReaction(null), 2200);
+          break;
+
         case "state":
           setWaiting(false);
           setRematchWaiting(false);
@@ -59,6 +66,7 @@ export function useGame(roomCode, playerName) {
           setGameState(msg.game);
           setNames(msg.names ?? {});
           if (msg.settings) setSettings(msg.settings);
+          if (msg.scores)   setScores(msg.scores);
           setServerClocks({
             1: msg.clocks?.["1"] ?? msg.settings?.time_limit ?? 300,
             2: msg.clocks?.["2"] ?? msg.settings?.time_limit ?? 300,
@@ -100,6 +108,10 @@ export function useGame(roomCode, playerName) {
     send({ type: "rematch" });
   }, []);
 
+  const sendReaction = useCallback((emoji) => {
+    send({ type: "reaction", emoji });
+  }, []);
+
   return {
     joined,
     playerNum,
@@ -108,12 +120,15 @@ export function useGame(roomCode, playerName) {
     names,
     serverClocks,
     settings,
+    scores,
     error,
     opponentLeft,
     rematchWaiting,
     rematchRequested,
+    incomingReaction,
     selectPiece,
     placePiece,
     requestRematch,
+    sendReaction,
   };
 }

@@ -44,9 +44,17 @@ class Room:
         self.last_activity: float = time.monotonic()
         self.rematch_votes: set = set()
         self.starting_player: int = 1   # alternates each rematch
+        self.scores: Dict[str, int] = {"1": 0, "2": 0, "draws": 0}
+
+    def record_result(self):
+        """Call after game_over is set to update the score tally."""
+        if self.game.winner:
+            self.scores[str(self.game.winner)] += 1
+        elif self.game.game_over:
+            self.scores["draws"] += 1
 
     def reset_for_rematch(self):
-        self.starting_player = 3 - self.starting_player   # alternate 1 → 2 → 1 …
+        self.starting_player = 3 - self.starting_player
         self.game = QuartoGame(game_mode=self.game_mode, starting_player=self.starting_player)
         self.clocks = {1: float(self.time_limit), 2: float(self.time_limit)}
         self.clock_started_at = None
@@ -104,6 +112,7 @@ class Room:
                 "game_mode":  self.game_mode,
                 "time_limit": self.time_limit,
             },
+            "scores": self.scores,
         }
 
 
@@ -241,6 +250,7 @@ async def websocket_endpoint(ws: WebSocket):
                     game.game_over = True
                     game.winner = 3 - my_player
                     game.winning_type = "timeout"
+                    room.record_result()
                     await broadcast(room, room.state_payload(1), room.state_payload(2))
                     continue
 
@@ -249,8 +259,10 @@ async def websocket_endpoint(ws: WebSocket):
                     await ws.send_json({"type": "error", "message": "Invalid piece selection"})
                     continue
 
-                # After select_piece, current_player has switched to the placer
-                room.start_clock(game.current_player)
+                if game.game_over:
+                    room.record_result()
+                else:
+                    room.start_clock(game.current_player)
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
 
             elif msg_type == "place_piece":
@@ -270,6 +282,7 @@ async def websocket_endpoint(ws: WebSocket):
                     game.game_over = True
                     game.winner = 3 - my_player
                     game.winning_type = "timeout"
+                    room.record_result()
                     await broadcast(room, room.state_payload(1), room.state_payload(2))
                     continue
 
@@ -278,11 +291,19 @@ async def websocket_endpoint(ws: WebSocket):
                     await ws.send_json({"type": "error", "message": "Invalid placement"})
                     continue
 
-                if not game.game_over:
-                    # Next phase is select; start clock for selector
+                if game.game_over:
+                    room.record_result()
+                else:
                     room.start_clock(game.current_player)
-
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
+
+            elif msg_type == "reaction":
+                emoji = str(msg.get("emoji", ""))[:2]   # cap length, basic safety
+                if emoji:
+                    await broadcast(room,
+                        {"type": "reaction", "from": my_player, "emoji": emoji},
+                        {"type": "reaction", "from": my_player, "emoji": emoji},
+                    )
 
             elif msg_type == "rematch":
                 if not game.game_over:

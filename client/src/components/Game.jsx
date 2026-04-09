@@ -3,6 +3,8 @@ import PieceTray from "./PieceTray.jsx";
 import ClockBar from "./ClockBar.jsx";
 import StatusBar from "./StatusBar.jsx";
 import WinOverlay from "./WinOverlay.jsx";
+import ScoreBar from "./ScoreBar.jsx";
+import Reactions from "./Reactions.jsx";
 import { useGame } from "../hooks/useGame.js";
 import { useClock } from "../hooks/useClock.js";
 
@@ -23,13 +25,16 @@ export default function Game({ roomCode, playerName, onLeave }) {
     names,
     serverClocks,
     settings,
+    scores,
     error,
     opponentLeft,
     rematchWaiting,
     rematchRequested,
+    incomingReaction,
     selectPiece,
     placePiece,
     requestRematch,
+    sendReaction,
   } = useGame(roomCode, playerName);
 
   const gameMode  = settings?.game_mode  ?? "classic";
@@ -159,6 +164,14 @@ export default function Game({ roomCode, playerName, onLeave }) {
             playerNum={playerNum}
             gameMode={gameMode}
             onSelect={selectPiece}
+          />
+
+          <ScoreBar scores={scores} names={names} />
+
+          <Reactions
+            onReact={sendReaction}
+            incomingReaction={incomingReaction}
+            names={names}
           />
         </aside>
       </div>
