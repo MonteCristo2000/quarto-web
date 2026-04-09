@@ -7,16 +7,36 @@
  *   names      - { "1": name, "2": name }
  *   onLeave    - () => void — return to lobby
  */
+const ATTR_LABELS = [
+  ["short",  "tall"],
+  ["light",  "dark"],
+  ["round",  "square"],
+  ["solid",  "hollow"],
+];
+
+function getCommonAttrs(board, winningLine) {
+  if (!winningLine?.length) return [];
+  const pieces = winningLine.map(([r, c]) => board[r][c]).filter((p) => p !== null && p !== undefined);
+  if (pieces.length < 4) return [];
+  return ATTR_LABELS
+    .map(([a, b], i) => {
+      const bit = (pieces[0] >> i) & 1;
+      return pieces.every((p) => ((p >> i) & 1) === bit) ? (bit ? b : a) : null;
+    })
+    .filter(Boolean);
+}
+
 export default function WinOverlay({ game, playerNum, names, onLeave }) {
   if (!game?.game_over) return null;
 
-  const { winner, winning_type } = game;
+  const { winner, winning_type, board, winning_line } = game;
 
   const winnerName  = winner ? (names?.[String(winner)] || `Player ${winner}`) : null;
   const isWin       = winner === playerNum;
   const isDraw      = winner === null || winner === undefined;
   const isLose      = !isDraw && !isWin;
   const isTimeout   = winning_type === "timeout";
+  const commonAttrs = (!isDraw && !isTimeout) ? getCommonAttrs(board, winning_line) : [];
 
   let icon, title, titleClass, subtitle;
 
@@ -47,9 +67,16 @@ export default function WinOverlay({ game, playerNum, names, onLeave }) {
         <div className="win-overlay__icon">{icon}</div>
         <div className={`win-overlay__title ${titleClass}`}>{title}</div>
         <div className="win-overlay__subtitle">{subtitle}</div>
-        {winning_type && !isDraw && (
+        {winning_type && !isDraw && !isTimeout && (
           <div className="win-overlay__detail">
-            Winning condition: {winning_type}
+            {winning_type}
+          </div>
+        )}
+        {commonAttrs.length > 0 && (
+          <div className="win-overlay__attrs">
+            {commonAttrs.map((attr) => (
+              <span key={attr} className="win-overlay__attr-badge">{attr}</span>
+            ))}
           </div>
         )}
         <button className="win-overlay__btn" onClick={onLeave}>
