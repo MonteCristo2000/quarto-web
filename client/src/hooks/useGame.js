@@ -12,9 +12,10 @@ export function useGame(roomCode, playerName) {
   const [joined, setJoined] = useState(false);
   const [playerNum, setPlayerNum] = useState(null);
   const [waiting, setWaiting] = useState(false);
-  const [gameState, setGameState] = useState(null);     // raw server game dict
+  const [gameState, setGameState] = useState(null);
   const [names, setNames] = useState({});
   const [serverClocks, setServerClocks] = useState({ 1: 300, 2: 300 });
+  const [settings, setSettings] = useState({ game_mode: "classic", time_limit: 300 });
   const [error, setError] = useState(null);
   const [opponentLeft, setOpponentLeft] = useState(false);
   const playerNumRef = useRef(playerNum);
@@ -45,10 +46,10 @@ export function useGame(roomCode, playerName) {
           setWaiting(false);
           setGameState(msg.game);
           setNames(msg.names ?? {});
-          // clocks come as {"1": ..., "2": ...}
+          if (msg.settings) setSettings(msg.settings);
           setServerClocks({
-            1: msg.clocks?.["1"] ?? 300,
-            2: msg.clocks?.["2"] ?? 300,
+            1: msg.clocks?.["1"] ?? msg.settings?.time_limit ?? 300,
+            2: msg.clocks?.["2"] ?? msg.settings?.time_limit ?? 300,
           });
           if (msg.your_player && msg.your_player !== playerNumRef.current) {
             setPlayerNum(msg.your_player);
@@ -90,6 +91,7 @@ export function useGame(roomCode, playerName) {
     gameState,
     names,
     serverClocks,
+    settings,
     error,
     opponentLeft,
     selectPiece,

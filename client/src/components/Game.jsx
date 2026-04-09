@@ -22,11 +22,15 @@ export default function Game({ roomCode, playerName, onLeave }) {
     gameState,
     names,
     serverClocks,
+    settings,
     error,
     opponentLeft,
     selectPiece,
     placePiece,
   } = useGame(roomCode, playerName);
+
+  const gameMode  = settings?.game_mode  ?? "classic";
+  const timeLimit = settings?.time_limit ?? 300;
 
   // Determine which player's clock is active
   // During "select" phase, the current_player is selecting → their clock ticks.
@@ -88,9 +92,17 @@ export default function Game({ roomCode, playerName, onLeave }) {
       {/* Header */}
       <header className="game__header">
         <span className="game__logo">QUARTO</span>
-        <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
-          Room: <strong style={{ color: "var(--accent-cyan)", letterSpacing: "0.12em" }}>{roomCode}</strong>
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            Room: <strong style={{ color: "var(--accent-cyan)", letterSpacing: "0.12em" }}>{roomCode}</strong>
+          </span>
+          {gameMode === "color" && (
+            <span className="game__mode-badge game__mode-badge--color">Color Mode</span>
+          )}
+          <span className="game__mode-badge">
+            {Math.floor(timeLimit / 60)} min
+          </span>
+        </div>
         <button className="game__leave-btn" onClick={onLeave}>
           ← Leave
         </button>
@@ -141,6 +153,8 @@ export default function Game({ roomCode, playerName, onLeave }) {
             available={available}
             canSelect={canSelect}
             opponentName={oppName}
+            playerNum={playerNum}
+            gameMode={gameMode}
             onSelect={selectPiece}
           />
         </aside>

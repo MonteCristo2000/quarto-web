@@ -23,17 +23,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CLOCK_SECONDS = 300.0   # 5 minutes per player
-ROOM_TTL = 3600         # 1 hour inactivity expiry
+ROOM_TTL = 3600   # 1 hour inactivity expiry
+
+VALID_GAME_MODES  = {"classic", "color"}
+VALID_TIME_LIMITS = {60, 180, 300, 600}   # 1 min (debug), 3 min, 5 min, 10 min
 
 
 class Room:
-    def __init__(self, code: str):
+    def __init__(self, code: str, game_mode: str = "classic", time_limit: int = 300):
         self.code = code
-        self.game = QuartoGame()
+        self.game_mode  = game_mode
+        self.time_limit = time_limit
+        self.game = QuartoGame(game_mode=game_mode)
         self.players: Dict[int, Optional[WebSocket]] = {1: None, 2: None}
         self.names: Dict[int, str] = {}
-        self.clocks: Dict[int, float] = {1: CLOCK_SECONDS, 2: CLOCK_SECONDS}
+        self.clocks: Dict[int, float] = {1: float(time_limit), 2: float(time_limit)}
         self.clock_started_at: Optional[float] = None
         self.active_clock_player: Optional[int] = None
         self.created_at: float = time.monotonic()
@@ -70,7 +74,6 @@ class Room:
 
     def state_payload(self, your_player: int) -> dict:
         game_dict = self.game.to_dict()
-        # If game is not over, check for timeout right now
         clocks_snapshot = {
             "1": self.clocks[1],
             "2": self.clocks[2],
@@ -87,6 +90,10 @@ class Room:
             "names": {str(k): v for k, v in self.names.items()},
             "clocks": clocks_snapshot,
             "your_player": your_player,
+            "settings": {
+                "game_mode":  self.game_mode,
+                "time_limit": self.time_limit,
+            },
         }
 
 
@@ -112,16 +119,26 @@ def purge_stale_rooms():
 # HTTP endpoints
 # ---------------------------------------------------------------------------
 
+class CreateRoomRequest(BaseModel):
+    game_mode:  str = "classic"
+    time_limit: int = 300
+
+
 class CreateRoomResponse(BaseModel):
     room_code: str
     player_num: int
 
 
 @app.post("/rooms", response_model=CreateRoomResponse)
-async def create_room():
+async def create_room(body: CreateRoomRequest = None):
     purge_stale_rooms()
+    # Sanitise inputs
+    if body is None:
+        body = CreateRoomRequest()
+    game_mode  = body.game_mode  if body.game_mode  in VALID_GAME_MODES  else "classic"
+    time_limit = body.time_limit if body.time_limit in VALID_TIME_LIMITS  else 300
     code = generate_code()
-    rooms[code] = Room(code)
+    rooms[code] = Room(code, game_mode=game_mode, time_limit=time_limit)
     return {"room_code": code, "player_num": 1}
 
 

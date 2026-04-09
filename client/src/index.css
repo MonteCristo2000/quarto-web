@@ -185,6 +185,50 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.lobby__option-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.lobby__option-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.35rem;
+  min-height: 1.1em;
+}
+
+.lobby__toggle-group {
+  display: flex;
+  gap: 6px;
+}
+
+.lobby__toggle {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.lobby__toggle:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.lobby__toggle--active {
+  border-color: var(--accent-cyan);
+  background: #0d2a33;
+  color: var(--accent-cyan);
+}
+
 /* ============================================================
    Game layout
    ============================================================ */
@@ -214,6 +258,23 @@ button:disabled {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.game__mode-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game__mode-badge--color {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: #0a2030;
 }
 
 .game__leave-btn {
@@ -346,6 +407,19 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.piece-tray__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.piece-tray__color-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .piece-tray__title {

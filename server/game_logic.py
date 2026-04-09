@@ -36,19 +36,40 @@ class QuartoGame:
         for r in range(3) for c in range(3)
     ]
 
-    def __init__(self):
+    def __init__(self, game_mode="classic"):
+        """
+        game_mode: "classic" | "color"
+          classic — any player may give any available piece
+          color   — Player 1 may only give light pieces (bit 1 = 0, cyan)
+                    Player 2 may only give dark  pieces (bit 1 = 1, red)
+        """
         self.board = [[None] * 4 for _ in range(4)]
         self.available = set(range(16))
         self.current_piece = None
         self.current_player = 1
-        self.phase = "select"   # "select" | "place"
+        self.phase = "select"       # "select" | "place"
         self.game_over = False
-        self.winner = None       # 1 | 2 | None
+        self.winner = None          # 1 | 2 | None
         self.winning_line = []
         self.winning_type = ""
+        self.game_mode = game_mode  # stored for rule enforcement + client display
+
+    def _color_allowed(self, piece):
+        """
+        In color mode: Player 1 gives light pieces (color bit = 0),
+                       Player 2 gives dark  pieces (color bit = 1).
+        Returns True if the piece is allowed for the current player to give.
+        """
+        if self.game_mode != "color":
+            return True
+        color_bit = (piece >> 1) & 1          # 0 = light, 1 = dark
+        expected   = self.current_player - 1  # P1 → 0, P2 → 1
+        return color_bit == expected
 
     def select_piece(self, piece):
         if self.game_over or self.phase != "select" or piece not in self.available:
+            return False
+        if not self._color_allowed(piece):
             return False
         self.available.remove(piece)
         self.current_piece = piece
@@ -111,4 +132,5 @@ class QuartoGame:
             "winner": self.winner,
             "winning_line": [list(cell) for cell in self.winning_line],
             "winning_type": self.winning_type,
+            "game_mode": self.game_mode,
         }
