@@ -103,8 +103,8 @@ class QuartoGame:
 
     def _check_win(self):
         line_names = [
-            "Row 0", "Row 1", "Row 2", "Row 3",
-            "Column 0", "Column 1", "Column 2", "Column 3",
+            "Row 1", "Row 2", "Row 3", "Row 4",
+            "Column 1", "Column 2", "Column 3", "Column 4",
             "Main diagonal", "Anti-diagonal",
         ]
         for i, grp in enumerate(self._LINES):

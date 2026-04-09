@@ -38,6 +38,16 @@ export default function WinOverlay({ game, playerNum, names, rematchWaiting, rem
   const isTimeout   = winning_type === "timeout";
   const commonAttrs = (!isDraw && !isTimeout) ? getCommonAttrs(board, winning_line) : [];
 
+  // Build a human-readable winning condition string e.g. "4 dark + tall pieces in Column 3"
+  function winConditionText() {
+    if (isDraw || isTimeout || !winning_type) return null;
+    const location = winning_type.startsWith("2×2") ? "a 2×2 square" : winning_type;
+    if (commonAttrs.length === 0) return `in ${location}`;
+    const attrStr = commonAttrs.join(" + ");
+    return `4 ${attrStr} pieces in ${location}`;
+  }
+  const conditionText = winConditionText();
+
   let icon, title, titleClass, subtitle;
 
   if (isDraw) {
@@ -49,16 +59,12 @@ export default function WinOverlay({ game, playerNum, names, rematchWaiting, rem
     icon        = "🏆";
     title       = "You Win!";
     titleClass  = "win-overlay__title--win";
-    subtitle    = isTimeout
-      ? "Your opponent ran out of time."
-      : `You completed ${winning_type}.`;
+    subtitle    = isTimeout ? "Your opponent ran out of time." : conditionText;
   } else {
     icon        = "😔";
     title       = `${winnerName} Wins`;
     titleClass  = "win-overlay__title--lose";
-    subtitle    = isTimeout
-      ? "You ran out of time."
-      : `${winnerName} completed ${winning_type}.`;
+    subtitle    = isTimeout ? "You ran out of time." : conditionText;
   }
 
   return (
@@ -67,11 +73,6 @@ export default function WinOverlay({ game, playerNum, names, rematchWaiting, rem
         <div className="win-overlay__icon">{icon}</div>
         <div className={`win-overlay__title ${titleClass}`}>{title}</div>
         <div className="win-overlay__subtitle">{subtitle}</div>
-        {winning_type && !isDraw && !isTimeout && (
-          <div className="win-overlay__detail">
-            {winning_type}
-          </div>
-        )}
         {commonAttrs.length > 0 && (
           <div className="win-overlay__attrs">
             {commonAttrs.map((attr) => (
