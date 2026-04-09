@@ -55,8 +55,8 @@ export function useGame(roomCode, playerName) {
           break;
 
         case "reaction":
-          setIncomingReaction({ from: msg.from, emoji: msg.emoji });
-          setTimeout(() => setIncomingReaction(null), 2200);
+          setIncomingReaction({ from: msg.from, emoji: msg.emoji, ts: Date.now() });
+          setTimeout(() => setIncomingReaction(null), 3200);
           break;
 
         case "state":

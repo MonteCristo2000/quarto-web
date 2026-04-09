@@ -30,12 +30,6 @@ export default function Reactions({ onReact, incomingReaction, names }) {
         ))}
       </div>
 
-      {incomingReaction && (
-        <div className="reactions__incoming" key={incomingReaction.emoji + Date.now()}>
-          <span className="reactions__incoming-emoji">{incomingReaction.emoji}</span>
-          <span className="reactions__incoming-name">{senderName}</span>
-        </div>
-      )}
     </div>
   );
 }
