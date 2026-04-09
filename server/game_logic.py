@@ -36,17 +36,18 @@ class QuartoGame:
         for r in range(3) for c in range(3)
     ]
 
-    def __init__(self, game_mode="classic"):
+    def __init__(self, game_mode="classic", starting_player=1):
         """
         game_mode: "classic" | "color"
           classic — any player may give any available piece
           color   — Player 1 may only give light pieces (bit 1 = 0, cyan)
                     Player 2 may only give dark  pieces (bit 1 = 1, red)
+        starting_player: 1 | 2 — who picks the first piece to give
         """
         self.board = [[None] * 4 for _ in range(4)]
         self.available = set(range(16))
         self.current_piece = None
-        self.current_player = 1
+        self.current_player = starting_player
         self.phase = "select"       # "select" | "place"
         self.game_over = False
         self.winner = None          # 1 | 2 | None

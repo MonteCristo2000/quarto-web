@@ -43,9 +43,11 @@ class Room:
         self.created_at: float = time.monotonic()
         self.last_activity: float = time.monotonic()
         self.rematch_votes: set = set()
+        self.starting_player: int = 1   # alternates each rematch
 
     def reset_for_rematch(self):
-        self.game = QuartoGame(game_mode=self.game_mode)
+        self.starting_player = 3 - self.starting_player   # alternate 1 → 2 → 1 …
+        self.game = QuartoGame(game_mode=self.game_mode, starting_player=self.starting_player)
         self.clocks = {1: float(self.time_limit), 2: float(self.time_limit)}
         self.clock_started_at = None
         self.active_clock_player = None
