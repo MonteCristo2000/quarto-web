@@ -25,8 +25,11 @@ export default function Game({ roomCode, playerName, onLeave }) {
     settings,
     error,
     opponentLeft,
+    rematchWaiting,
+    rematchRequested,
     selectPiece,
     placePiece,
+    requestRematch,
   } = useGame(roomCode, playerName);
 
   const gameMode  = settings?.game_mode  ?? "classic";
@@ -166,6 +169,9 @@ export default function Game({ roomCode, playerName, onLeave }) {
           game={gameState}
           playerNum={playerNum}
           names={names}
+          rematchWaiting={rematchWaiting}
+          rematchRequested={rematchRequested}
+          onRematch={requestRematch}
           onLeave={onLeave}
         />
       )}

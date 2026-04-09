@@ -686,6 +686,21 @@ button:disabled {
   background: #0a2018;
 }
 
+.win-overlay__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.win-overlay__rematch-waiting {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
 .win-overlay__btn {
   padding: 0.75rem 2rem;
   background: var(--accent-green);
@@ -700,6 +715,24 @@ button:disabled {
 
 .win-overlay__btn:active {
   transform: scale(0.97);
+}
+
+.win-overlay__btn--rematch {
+  background: var(--accent-cyan);
+  color: #000;
+}
+
+.win-overlay__btn--leave {
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: 0.55rem 1.5rem;
+}
+
+.win-overlay__btn--leave:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
 }
 
 /* ============================================================

@@ -18,6 +18,8 @@ export function useGame(roomCode, playerName) {
   const [settings, setSettings] = useState({ game_mode: "classic", time_limit: 300 });
   const [error, setError] = useState(null);
   const [opponentLeft, setOpponentLeft] = useState(false);
+  const [rematchWaiting, setRematchWaiting] = useState(false);   // I clicked, waiting for opponent
+  const [rematchRequested, setRematchRequested] = useState(false); // opponent clicked, waiting for me
   const playerNumRef = useRef(playerNum);
 
   useEffect(() => {
@@ -42,8 +44,18 @@ export function useGame(roomCode, playerName) {
           setWaiting(true);
           break;
 
+        case "rematch_waiting":
+          setRematchWaiting(true);
+          break;
+
+        case "rematch_requested":
+          setRematchRequested(true);
+          break;
+
         case "state":
           setWaiting(false);
+          setRematchWaiting(false);
+          setRematchRequested(false);
           setGameState(msg.game);
           setNames(msg.names ?? {});
           if (msg.settings) setSettings(msg.settings);
@@ -84,6 +96,10 @@ export function useGame(roomCode, playerName) {
     send({ type: "place_piece", row, col });
   }, []);
 
+  const requestRematch = useCallback(() => {
+    send({ type: "rematch" });
+  }, []);
+
   return {
     joined,
     playerNum,
@@ -94,7 +110,10 @@ export function useGame(roomCode, playerName) {
     settings,
     error,
     opponentLeft,
+    rematchWaiting,
+    rematchRequested,
     selectPiece,
     placePiece,
+    requestRematch,
   };
 }

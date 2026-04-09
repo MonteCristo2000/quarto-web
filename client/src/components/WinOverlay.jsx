@@ -26,7 +26,7 @@ function getCommonAttrs(board, winningLine) {
     .filter(Boolean);
 }
 
-export default function WinOverlay({ game, playerNum, names, onLeave }) {
+export default function WinOverlay({ game, playerNum, names, rematchWaiting, rematchRequested, onRematch, onLeave }) {
   if (!game?.game_over) return null;
 
   const { winner, winning_type, board, winning_line } = game;
@@ -79,9 +79,24 @@ export default function WinOverlay({ game, playerNum, names, onLeave }) {
             ))}
           </div>
         )}
-        <button className="win-overlay__btn" onClick={onLeave}>
-          Back to Lobby
-        </button>
+        <div className="win-overlay__actions">
+          {rematchWaiting ? (
+            <div className="win-overlay__rematch-waiting">
+              Waiting for opponent to accept…
+            </div>
+          ) : rematchRequested ? (
+            <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
+              Accept Rematch ⚔️
+            </button>
+          ) : (
+            <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
+              Rematch ⚔️
+            </button>
+          )}
+          <button className="win-overlay__btn win-overlay__btn--leave" onClick={onLeave}>
+            Back to Lobby
+          </button>
+        </div>
       </div>
     </div>
   );

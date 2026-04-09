@@ -42,6 +42,14 @@ class Room:
         self.active_clock_player: Optional[int] = None
         self.created_at: float = time.monotonic()
         self.last_activity: float = time.monotonic()
+        self.rematch_votes: set = set()
+
+    def reset_for_rematch(self):
+        self.game = QuartoGame(game_mode=self.game_mode)
+        self.clocks = {1: float(self.time_limit), 2: float(self.time_limit)}
+        self.clock_started_at = None
+        self.active_clock_player = None
+        self.rematch_votes = set()
 
     def assign_player(self, ws: WebSocket) -> Optional[int]:
         """Assign a WebSocket to a free player slot. Returns slot number or None."""
@@ -273,6 +281,28 @@ async def websocket_endpoint(ws: WebSocket):
                     room.start_clock(game.current_player)
 
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
+
+            elif msg_type == "rematch":
+                if not game.game_over:
+                    await ws.send_json({"type": "error", "message": "Game is not over yet"})
+                    continue
+                room.rematch_votes.add(my_player)
+                if len(room.rematch_votes) == 2:
+                    # Both agreed — reset and start fresh
+                    room.reset_for_rematch()
+                    room.start_clock(room.game.current_player)
+                    await broadcast(room, room.state_payload(1), room.state_payload(2))
+                else:
+                    # Notify the voter their request is pending
+                    await ws.send_json({"type": "rematch_waiting"})
+                    # Notify opponent a rematch was requested
+                    opponent = 3 - my_player
+                    opp_ws = room.players.get(opponent)
+                    if opp_ws is not None:
+                        try:
+                            await opp_ws.send_json({"type": "rematch_requested"})
+                        except Exception:
+                            pass
 
             else:
                 await ws.send_json({"type": "error", "message": f"Unknown message type: {msg_type}"})
