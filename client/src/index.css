@@ -101,9 +101,10 @@ button:disabled {
 }
 
 .lobby__subtitle {
-  color: var(--text-secondary);
-  font-size: 1rem;
-  margin-top: -1.5rem;
+  color: var(--accent-cyan);
+  opacity: 0.6;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
   letter-spacing: 0.05em;
 }
 
