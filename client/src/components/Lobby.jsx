@@ -21,6 +21,12 @@ const MODE_OPTIONS = [
   },
 ];
 
+const DIFFICULTY_OPTIONS = [
+  { value: "easy",   label: "Easy",   desc: "Looks 1 move ahead. Good for learning." },
+  { value: "medium", label: "Medium", desc: "Looks 3 moves ahead. A decent challenge." },
+  { value: "hard",   label: "Hard",   desc: "Looks 5 moves ahead. Hard to beat." },
+];
+
 /**
  * Lobby — lets a player create or join a room.
  * Props:  onJoin({ roomCode, playerName }) => void
@@ -34,8 +40,10 @@ export default function Lobby({ onJoin }) {
   const [creating,    setCreating]    = useState(false);
 
   // Settings — only the creator chooses these
-  const [gameMode,   setGameMode]   = useState("classic");
-  const [timeLimit,  setTimeLimit]  = useState(300);
+  const [gameMode,      setGameMode]      = useState("classic");
+  const [timeLimit,     setTimeLimit]     = useState(300);
+  const [opponentType,  setOpponentType]  = useState("human");   // "human" | "ai"
+  const [aiDifficulty,  setAiDifficulty]  = useState("medium");
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -47,7 +55,12 @@ export default function Lobby({ onJoin }) {
       const res = await fetch(`${API_BASE}/rooms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ game_mode: gameMode, time_limit: timeLimit }),
+        body: JSON.stringify({
+          game_mode:     gameMode,
+          time_limit:    timeLimit,
+          vs_ai:         opponentType === "ai",
+          ai_difficulty: opponentType === "ai" ? aiDifficulty : undefined,
+        }),
       });
       if (!res.ok) throw new Error("Server error");
       const data = await res.json();
@@ -128,13 +141,54 @@ export default function Lobby({ onJoin }) {
               </div>
             </div>
 
+            {/* Opponent */}
+            <div>
+              <div className="lobby__option-label">Opponent</div>
+              <div className="lobby__toggle-group">
+                <button
+                  type="button"
+                  className={`lobby__toggle${opponentType === "human" ? " lobby__toggle--active" : ""}`}
+                  onClick={() => setOpponentType("human")}
+                >
+                  vs Human
+                </button>
+                <button
+                  type="button"
+                  className={`lobby__toggle${opponentType === "ai" ? " lobby__toggle--active" : ""}`}
+                  onClick={() => setOpponentType("ai")}
+                >
+                  vs AI
+                </button>
+              </div>
+
+              {opponentType === "ai" && (
+                <div style={{ marginTop: "0.5rem" }}>
+                  <div className="lobby__toggle-group">
+                    {DIFFICULTY_OPTIONS.map((d) => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        className={`lobby__toggle${aiDifficulty === d.value ? " lobby__toggle--active" : ""}`}
+                        onClick={() => setAiDifficulty(d.value)}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="lobby__option-desc">
+                    {DIFFICULTY_OPTIONS.find((d) => d.value === aiDifficulty)?.desc}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {createError && <div className="lobby__error">{createError}</div>}
             <button
               className="lobby__btn lobby__btn--primary"
               type="submit"
               disabled={creating}
             >
-              {creating ? "Creating…" : "Create New Room"}
+              {creating ? "Creating…" : opponentType === "ai" ? "Play vs AI" : "Create Room"}
             </button>
           </form>
         </div>

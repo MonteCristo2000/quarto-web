@@ -122,6 +122,21 @@ class QuartoGame:
                 return True
         return False
 
+    def clone(self):
+        """Fast shallow clone for use in tree search (avoids copy.deepcopy overhead)."""
+        g = QuartoGame.__new__(QuartoGame)
+        g.board          = [row[:] for row in self.board]
+        g.available      = set(self.available)
+        g.current_piece  = self.current_piece
+        g.current_player = self.current_player
+        g.phase          = self.phase
+        g.game_over      = self.game_over
+        g.winner         = self.winner
+        g.winning_line   = list(self.winning_line)
+        g.winning_type   = self.winning_type
+        g.game_mode      = self.game_mode
+        return g
+
     def to_dict(self):
         return {
             "board": self.board,

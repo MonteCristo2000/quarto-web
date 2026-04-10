@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from game_logic import QuartoGame
+from ai_agent import get_ai_move
 
 app = FastAPI()
 
@@ -25,15 +26,20 @@ app.add_middleware(
 
 ROOM_TTL = 3600   # 1 hour inactivity expiry
 
-VALID_GAME_MODES  = {"classic", "color"}
-VALID_TIME_LIMITS = {60, 180, 300, 600}   # 1 min (debug), 3 min, 5 min, 10 min
+VALID_GAME_MODES      = {"classic", "color"}
+VALID_TIME_LIMITS     = {60, 180, 300, 600}   # 1 min (debug), 3 min, 5 min, 10 min
+VALID_AI_DIFFICULTIES = {"easy", "medium", "hard"}
 
 
 class Room:
-    def __init__(self, code: str, game_mode: str = "classic", time_limit: int = 300):
+    def __init__(self, code: str, game_mode: str = "classic", time_limit: int = 300,
+                 vs_ai: bool = False, ai_difficulty: str = "medium"):
         self.code = code
-        self.game_mode  = game_mode
-        self.time_limit = time_limit
+        self.game_mode     = game_mode
+        self.time_limit    = time_limit
+        self.vs_ai         = vs_ai
+        self.ai_difficulty = ai_difficulty
+        self.ai_player     = 2          # AI is always player 2
         self.game = QuartoGame(game_mode=game_mode)
         self.players: Dict[int, Optional[WebSocket]] = {1: None, 2: None}
         self.names: Dict[int, str] = {}
@@ -75,6 +81,10 @@ class Room:
     def both_connected(self) -> bool:
         return self.players[1] is not None and self.players[2] is not None
 
+    def is_game_ready(self) -> bool:
+        """Game can proceed: either both humans connected, or it's an AI room with human joined."""
+        return self.vs_ai or self.both_connected()
+
     def deduct_clock(self):
         """Deduct elapsed time from the active player's clock. Returns True if timed out."""
         if self.clock_started_at is None or self.active_clock_player is None:
@@ -109,8 +119,10 @@ class Room:
             "clocks": clocks_snapshot,
             "your_player": your_player,
             "settings": {
-                "game_mode":  self.game_mode,
-                "time_limit": self.time_limit,
+                "game_mode":     self.game_mode,
+                "time_limit":    self.time_limit,
+                "vs_ai":         self.vs_ai,
+                "ai_difficulty": self.ai_difficulty if self.vs_ai else None,
             },
             "scores": self.scores,
         }
@@ -139,8 +151,10 @@ def purge_stale_rooms():
 # ---------------------------------------------------------------------------
 
 class CreateRoomRequest(BaseModel):
-    game_mode:  str = "classic"
-    time_limit: int = 300
+    game_mode:     str  = "classic"
+    time_limit:    int  = 300
+    vs_ai:         bool = False
+    ai_difficulty: str  = "medium"
 
 
 class CreateRoomResponse(BaseModel):
@@ -154,11 +168,69 @@ async def create_room(body: CreateRoomRequest = None):
     # Sanitise inputs
     if body is None:
         body = CreateRoomRequest()
-    game_mode  = body.game_mode  if body.game_mode  in VALID_GAME_MODES  else "classic"
-    time_limit = body.time_limit if body.time_limit in VALID_TIME_LIMITS  else 300
+    game_mode     = body.game_mode     if body.game_mode     in VALID_GAME_MODES      else "classic"
+    time_limit    = body.time_limit    if body.time_limit    in VALID_TIME_LIMITS     else 300
+    ai_difficulty = body.ai_difficulty if body.ai_difficulty in VALID_AI_DIFFICULTIES else "medium"
+    vs_ai         = bool(body.vs_ai)
     code = generate_code()
-    rooms[code] = Room(code, game_mode=game_mode, time_limit=time_limit)
+    rooms[code] = Room(code, game_mode=game_mode, time_limit=time_limit,
+                       vs_ai=vs_ai, ai_difficulty=ai_difficulty)
     return {"room_code": code, "player_num": 1}
+
+
+# ---------------------------------------------------------------------------
+# AI turn runner
+# ---------------------------------------------------------------------------
+
+async def _apply_ai_turn(room: Room):
+    """
+    Background task: runs while it's the AI's turn, applying one move at a time
+    with a short delay for natural UX. Broadcasts state after each move.
+    AI can take 1 or 2 consecutive actions (place, then select) before handing
+    back to the human.
+    """
+    loop = asyncio.get_running_loop()
+    ai_player = room.ai_player
+
+    try:
+        while not room.game.game_over and room.game.current_player == ai_player:
+            await asyncio.sleep(0.55)   # small pause so moves don't feel instant
+
+            # Compute move on a thread (CPU-bound) using a game snapshot
+            move = await loop.run_in_executor(
+                None, get_ai_move, room.game.clone(), room.ai_difficulty
+            )
+
+            # Deduct clock for the time AI "thought"
+            timed_out = room.deduct_clock()
+            if timed_out:
+                room.game.game_over  = True
+                room.game.winner     = 3 - ai_player
+                room.game.winning_type = "timeout"
+                room.record_result()
+                await broadcast(room, room.state_payload(1), room.state_payload(2))
+                return
+
+            # Apply move
+            if move[0] == "place":
+                room.game.place_piece(move[1], move[2])
+            else:
+                room.game.select_piece(move[1])
+
+            if room.game.game_over:
+                room.record_result()
+            else:
+                room.start_clock(room.game.current_player)
+
+            await broadcast(room, room.state_payload(1), room.state_payload(2))
+
+    except Exception as e:
+        ws = room.players.get(1)
+        if ws:
+            try:
+                await ws.send_json({"type": "error", "message": f"AI error: {e}"})
+            except Exception:
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -215,7 +287,15 @@ async def websocket_endpoint(ws: WebSocket):
             "room": room_code,
         })
 
-        if not room.both_connected():
+        if room.vs_ai:
+            # AI room: set AI name, start immediately
+            room.names[room.ai_player] = f"AI ({room.ai_difficulty.capitalize()})"
+            room.start_clock(room.game.current_player)
+            await ws.send_json(room.state_payload(my_player))
+            # If AI goes first (e.g. after rematch alternation), kick it off
+            if room.game.current_player == room.ai_player:
+                asyncio.create_task(_apply_ai_turn(room))
+        elif not room.both_connected():
             await ws.send_json({"type": "waiting", "message": "Waiting for opponent..."})
         else:
             # Notify both players
@@ -228,7 +308,7 @@ async def websocket_endpoint(ws: WebSocket):
             room.last_activity = time.monotonic()
             msg_type = msg.get("type")
 
-            if not room.both_connected():
+            if not room.is_game_ready():
                 await ws.send_json({"type": "waiting", "message": "Waiting for opponent..."})
                 continue
 
@@ -263,6 +343,8 @@ async def websocket_endpoint(ws: WebSocket):
                     room.record_result()
                 else:
                     room.start_clock(game.current_player)
+                    if room.vs_ai and game.current_player == room.ai_player:
+                        asyncio.create_task(_apply_ai_turn(room))
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
 
             elif msg_type == "place_piece":
@@ -295,6 +377,8 @@ async def websocket_endpoint(ws: WebSocket):
                     room.record_result()
                 else:
                     room.start_clock(game.current_player)
+                    if room.vs_ai and game.current_player == room.ai_player:
+                        asyncio.create_task(_apply_ai_turn(room))
                 await broadcast(room, room.state_payload(1), room.state_payload(2))
 
             elif msg_type == "rematch":
@@ -302,22 +386,27 @@ async def websocket_endpoint(ws: WebSocket):
                     await ws.send_json({"type": "error", "message": "Game is not over yet"})
                     continue
                 room.rematch_votes.add(my_player)
-                if len(room.rematch_votes) == 2:
-                    # Both agreed — reset and start fresh
+                votes_needed = 1 if room.vs_ai else 2
+                if len(room.rematch_votes) >= votes_needed:
+                    # All required players agreed — reset and start fresh
                     room.reset_for_rematch()
                     room.start_clock(room.game.current_player)
                     await broadcast(room, room.state_payload(1), room.state_payload(2))
+                    # If AI goes first on new game, kick it off
+                    if room.vs_ai and room.game.current_player == room.ai_player:
+                        asyncio.create_task(_apply_ai_turn(room))
                 else:
                     # Notify the voter their request is pending
                     await ws.send_json({"type": "rematch_waiting"})
-                    # Notify opponent a rematch was requested
-                    opponent = 3 - my_player
-                    opp_ws = room.players.get(opponent)
-                    if opp_ws is not None:
-                        try:
-                            await opp_ws.send_json({"type": "rematch_requested"})
-                        except Exception:
-                            pass
+                    # Notify opponent (human games only)
+                    if not room.vs_ai:
+                        opponent = 3 - my_player
+                        opp_ws = room.players.get(opponent)
+                        if opp_ws is not None:
+                            try:
+                                await opp_ws.send_json({"type": "rematch_requested"})
+                            except Exception:
+                                pass
 
             else:
                 await ws.send_json({"type": "error", "message": f"Unknown message type: {msg_type}"})
