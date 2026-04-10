@@ -1,57 +1,14 @@
 # Quarto Web
 
-A full-stack, real-time two-player implementation of the **Quarto** board game, built with:
+A full-stack, real-time two-player implementation of the **Quarto** board game.
 
-- **Backend**: Python / FastAPI / WebSockets (in-memory, no database needed)
+- **Backend**: Python / FastAPI / WebSockets (in-memory, no database)
 - **Frontend**: React 18 + Vite, plain CSS
-
----
-
-## Prerequisites
-
-| Tool | Minimum version |
-|------|----------------|
-| Python | 3.11 |
-| Node.js | 18 |
-| npm | 9 |
-
----
-
-## Getting Started
-
-### 1 — Backend
-
-```bash
-cd server
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-The server starts on **http://localhost:8000**.
-
-### 2 — Frontend
-
-Open a second terminal:
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-The dev server starts on **http://localhost:5173**.
+- **Deployed**: Railway (backend) + Vercel (frontend)
 
 ---
 
 ## How to Play
-
-1. Open two browser tabs (or two different browsers) and navigate to **http://localhost:5173**.
-2. In the first tab, enter your name and click **Create New Room**. A 4-letter room code will appear.
-3. Share that room code with your opponent.
-4. In the second tab, enter a name and the room code, then click **Join Room**.
-5. The game starts automatically once both players are connected.
-
-### Rules
 
 Quarto is a two-player abstract strategy game played on a 4×4 board with 16 unique pieces.
 
@@ -66,16 +23,35 @@ Each piece has four binary attributes:
 
 **Turn order:**
 
-1. The active player **selects** a piece from the tray and hands it to their opponent.
+1. The active player **selects** a piece from the tray and gives it to their opponent.
 2. The opponent **places** that piece anywhere on the board.
 3. Roles swap — the player who just placed now selects the next piece.
 
-**Winning:**
-A player wins if, after placing a piece, there exist four pieces in a line (row, column, diagonal) **or** a 2×2 square that all share at least one attribute.
+**Winning:** A player wins if, after placing a piece, there are four pieces in a row, column, diagonal, **or** a 2×2 square that all share at least one attribute.
 
-If all 16 pieces are placed with no winner the game is a draw.
+If all 16 pieces are placed with no winner, the game is a draw.
 
-Each player has a **5-minute clock**. Running out of time loses the game.
+---
+
+## Game Modes
+
+### Classic Mode
+Standard Quarto rules — any piece can be given to the opponent.
+
+### Color Mode
+Each player is assigned a color (Player 1 = cyan, Player 2 = red). You may only **give** pieces of your own color to your opponent. This adds a strategic constraint on piece selection.
+
+---
+
+## Features
+
+- **Room system** — create a room, get a 4-letter code, share it with your opponent
+- **Chess clock** — configurable time limit (3 / 5 / 10 min per player); running out of time loses the game
+- **Rematch** — both players can vote for a rematch; the starting player alternates each game
+- **Score tracker** — win/loss/draw tally persists across rematches in the same room
+- **Winning condition display** — end screen shows exactly what won (e.g. "4 dark + tall pieces in Column 3")
+- **Reconnect** — refresh the page and rejoin using the same room code + name to restore your slot
+- **Mobile friendly** — responsive layout for phones and tablets
 
 ---
 
@@ -84,8 +60,9 @@ Each player has a **5-minute clock**. Running out of time loses the game.
 ```
 quarto-web/
   server/
-    game_logic.py    Pure game logic (QuartoGame class + helpers)
+    game_logic.py    Pure game logic (QuartoGame class, win detection)
     main.py          FastAPI app — HTTP room creation + WebSocket handler
+    Dockerfile       For Railway deployment
     requirements.txt
 
   client/
@@ -96,24 +73,55 @@ quarto-web/
       main.jsx       React entry point
       App.jsx        Top-level router (Lobby <-> Game)
       ws.js          WebSocket singleton with auto-reconnect
-      index.css      All styles (dark theme, CSS variables)
+      index.css      All styles (dark theme, CSS variables, responsive)
       components/
-        Lobby.jsx      Create / join room screen
-        Game.jsx       Main game layout
-        Board.jsx      4×4 interactive board
+        Lobby.jsx      Create / join room + game mode & time limit selection
+        Game.jsx       Main game layout (board + side panel)
+        Board.jsx      4x4 interactive board
         PieceTray.jsx  16-piece selection grid
         PieceShape.jsx SVG piece renderer
         ClockBar.jsx   Dual countdown clocks
         StatusBar.jsx  Turn / phase indicator
-        WinOverlay.jsx End-game modal
+        ScoreBar.jsx   Cross-rematch score tally
+        WinOverlay.jsx End-game modal with winning condition
       hooks/
-        useGame.js   WebSocket wiring + game state
-        useClock.js  Client-side clock interpolation
+        useGame.js   WebSocket wiring + all game state
+        useClock.js  Client-side clock interpolation for smooth display
 ```
 
 ---
 
-## Local network (same WiFi — phone, tablet, another laptop)
+## Local Setup
+
+### Prerequisites
+
+| Tool | Minimum version |
+|------|----------------|
+| Python | 3.11 |
+| Node.js | 18 |
+| npm | 9 |
+
+### Backend
+
+```bash
+cd server
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+Starts on **http://localhost:8000**.
+
+### Frontend
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Starts on **http://localhost:5173**. Open two tabs to play locally.
+
+### Local network (phone, tablet, another laptop on same WiFi)
 
 ```bash
 # Backend — bind to all interfaces
@@ -129,41 +137,26 @@ Vite prints a `Network:` URL like `http://192.168.x.x:5173` — open that on any
 
 ---
 
-## Production deployment (Railway + Vercel)
+## Production Deployment (Railway + Vercel)
 
-### Step 1 — Push to GitHub
+### Backend on Railway
 
-```bash
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin https://github.com/YOUR_USERNAME/quarto-web.git
-git push -u origin main
-```
+1. [railway.app](https://railway.app) -> **New Project -> Deploy from GitHub repo**
+2. Set **Root Directory** to `server`
+3. Railway detects the `Dockerfile` and builds automatically
+4. After deploy: **Settings -> Networking -> Generate Domain**
+5. Copy the domain, e.g. `quarto-web-production.up.railway.app`
 
-### Step 2 — Deploy backend on Railway
+### Frontend on Vercel
 
-1. [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo** → select your repo
-2. In the service settings set **Root Directory** to `server`
-3. Railway detects the `Dockerfile` automatically and builds it
-4. After deploy: **Settings → Networking → Generate Domain**
-5. Copy the domain, e.g. `quarto-backend-production.up.railway.app`
-
-### Step 3 — Deploy frontend on Vercel
-
-1. [vercel.com](https://vercel.com) → **Add New Project → Import** → select your repo
+1. [vercel.com](https://vercel.com) -> **Add New Project -> Import** -> select your repo
 2. Set **Root Directory** to `client`
-3. Vercel auto-detects Vite (build: `npm run build`, output: `dist`)
-4. Add an **Environment Variable**:
+3. Add an **Environment Variable**:
    ```
-   VITE_WS_URL = wss://quarto-backend-production.up.railway.app/ws
+   VITE_WS_URL = wss://quarto-web-production.up.railway.app/ws
    ```
-   (use your Railway domain from Step 2 — note `wss://`, not `https://`)
-5. Click **Deploy** → Vercel gives you a URL like `https://quarto-web.vercel.app`
-
-Share that URL with anyone — no install required.
-
-### Redeployment
+   (use your Railway domain — note `wss://` not `https://`, and include `/ws`)
+4. Click **Deploy**
 
 Every `git push` to `main` automatically redeploys both services.
 
@@ -173,13 +166,13 @@ Every `git push` to `main` automatically redeploys both services.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VITE_WS_URL` | auto-detected from `window.location.hostname` | WebSocket server URL — must be set in production |
+| `VITE_WS_URL` | auto-detected from `window.location` | WebSocket server URL — required in production |
 
 ---
 
-## Notes
+## Technical Notes
 
 - Rooms expire after **1 hour** of inactivity.
-- If a player refreshes, they can reconnect by entering the same room code and name — they will be restored to their slot.
-- The server is authoritative for clock management; the client only interpolates for smooth display.
-- `game_logic.py` has no networking imports — plug in an RL bot by importing it directly.
+- The server is authoritative for clock management; the client interpolates for smooth display.
+- `game_logic.py` has no networking imports — it can be imported directly to build an AI bot.
+- CORS is set to `allow_origins=["*"]` because Vercel generates a new preview URL on every deploy.
