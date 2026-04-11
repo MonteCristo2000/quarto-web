@@ -147,38 +147,40 @@ export default function Game({ roomCode, playerName, onLeave }) {
             gameOver={game_over}
           />
 
-          <StatusBar
-            game={gameState}
-            playerNum={playerNum}
-            names={names}
-            isMyTurn={isMyTurn}
-          />
+          {/* When game is over: show win panel in side panel so board stays visible */}
+          {game_over ? (
+            <WinOverlay
+              game={gameState}
+              playerNum={playerNum}
+              names={names}
+              rematchWaiting={rematchWaiting}
+              rematchRequested={rematchRequested}
+              onRematch={requestRematch}
+              onLeave={onLeave}
+            />
+          ) : (
+            <>
+              <StatusBar
+                game={gameState}
+                playerNum={playerNum}
+                names={names}
+                isMyTurn={isMyTurn}
+              />
 
-          <PieceTray
-            available={available}
-            canSelect={canSelect}
-            opponentName={oppName}
-            playerNum={playerNum}
-            gameMode={gameMode}
-            onSelect={selectPiece}
-          />
+              <PieceTray
+                available={available}
+                canSelect={canSelect}
+                opponentName={oppName}
+                playerNum={playerNum}
+                gameMode={gameMode}
+                onSelect={selectPiece}
+              />
+            </>
+          )}
 
           <ScoreBar scores={scores} names={names} />
         </aside>
       </div>
-
-      {/* Win overlay */}
-      {game_over && (
-        <WinOverlay
-          game={gameState}
-          playerNum={playerNum}
-          names={names}
-          rematchWaiting={rematchWaiting}
-          rematchRequested={rematchRequested}
-          onRematch={requestRematch}
-          onLeave={onLeave}
-        />
-      )}
     </div>
   );
 }

@@ -624,32 +624,36 @@ button:disabled {
 /* ============================================================
    Win Overlay
    ============================================================ */
-.win-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 12, 22, 0.82);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-}
-
-.win-overlay__modal {
-  background: var(--bg-panel);
+/* Win panel — inline in side panel, board stays fully visible */
+.win-panel {
+  background: var(--bg-card);
   border: 1px solid var(--border-bright);
-  border-radius: var(--radius-lg);
-  padding: 2.5rem;
-  max-width: 420px;
-  width: 100%;
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  box-shadow: 0 0 40px #00ff6e22;
+  gap: 0.85rem;
+  box-shadow: 0 0 24px #00ff6e18;
 }
 
+.win-panel__icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.win-panel__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.win-panel__subtitle {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+/* Keep old class names used by modal for backwards compat */
 .win-overlay__icon {
   font-size: 3rem;
   line-height: 1;

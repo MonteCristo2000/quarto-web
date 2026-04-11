@@ -67,37 +67,36 @@ export default function WinOverlay({ game, playerNum, names, rematchWaiting, rem
     subtitle    = isTimeout ? "You ran out of time." : conditionText;
   }
 
+  // Inline panel — sits inside the side panel, board stays fully visible
   return (
-    <div className="win-overlay" role="dialog" aria-modal="true" aria-label="Game over">
-      <div className="win-overlay__modal">
-        <div className="win-overlay__icon">{icon}</div>
-        <div className={`win-overlay__title ${titleClass}`}>{title}</div>
-        <div className="win-overlay__subtitle">{subtitle}</div>
-        {commonAttrs.length > 0 && (
-          <div className="win-overlay__attrs">
-            {commonAttrs.map((attr) => (
-              <span key={attr} className="win-overlay__attr-badge">{attr}</span>
-            ))}
-          </div>
-        )}
-        <div className="win-overlay__actions">
-          {rematchWaiting ? (
-            <div className="win-overlay__rematch-waiting">
-              Waiting for opponent to accept…
-            </div>
-          ) : rematchRequested ? (
-            <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
-              Accept Rematch ⚔️
-            </button>
-          ) : (
-            <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
-              Rematch ⚔️
-            </button>
-          )}
-          <button className="win-overlay__btn win-overlay__btn--leave" onClick={onLeave}>
-            Back to Lobby
-          </button>
+    <div className="win-panel" role="status" aria-label="Game over">
+      <div className="win-panel__icon">{icon}</div>
+      <div className={`win-panel__title ${titleClass}`}>{title}</div>
+      <div className="win-panel__subtitle">{subtitle}</div>
+      {commonAttrs.length > 0 && (
+        <div className="win-overlay__attrs">
+          {commonAttrs.map((attr) => (
+            <span key={attr} className="win-overlay__attr-badge">{attr}</span>
+          ))}
         </div>
+      )}
+      <div className="win-overlay__actions">
+        {rematchWaiting ? (
+          <div className="win-overlay__rematch-waiting">
+            Waiting for opponent to accept…
+          </div>
+        ) : rematchRequested ? (
+          <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
+            Accept Rematch ⚔️
+          </button>
+        ) : (
+          <button className="win-overlay__btn win-overlay__btn--rematch" onClick={onRematch}>
+            Rematch ⚔️
+          </button>
+        )}
+        <button className="win-overlay__btn win-overlay__btn--leave" onClick={onLeave}>
+          Back to Lobby
+        </button>
       </div>
     </div>
   );
