@@ -384,13 +384,22 @@ button:disabled {
 }
 
 .board__cell--winning {
-  border-color: var(--accent-green) !important;
-  animation: winning-pulse 1.2s ease-in-out infinite alternate;
+  border-color: var(--accent-yellow) !important;
+  border-width: 3px !important;
+  background: #2a2200 !important;
+  animation: winning-pulse 0.9s ease-in-out infinite alternate;
+  z-index: 1;
 }
 
 @keyframes winning-pulse {
-  from { box-shadow: 0 0 6px #00ff6e66; }
-  to   { box-shadow: var(--shadow-glow-green); background: #1a2e20; }
+  from {
+    box-shadow: 0 0 8px #ffd20088,  0 0 16px #ffd20044;
+    background: #2a2200 !important;
+  }
+  to {
+    box-shadow: 0 0 22px #ffd200cc, 0 0 40px #ffd20066;
+    background: #3d3000 !important;
+  }
 }
 
 .board__ghost {
