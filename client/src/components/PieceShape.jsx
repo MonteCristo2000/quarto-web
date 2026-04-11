@@ -2,7 +2,7 @@
  * PieceShape — renders an SVG representation of a Quarto piece.
  *
  * Bit encoding (same as Python game_logic):
- *   bit 0 (1): size    — 0=large, 1=small
+ *   bit 0 (1): size    — 0=short (small), 1=tall (large)
  *   bit 1 (2): color   — 0=cyan,  1=red
  *   bit 2 (4): shape   — 0=circle, 1=square
  *   bit 3 (8): fill    — 0=filled, 1=hollow
@@ -17,7 +17,7 @@ const VB = 100;
 export default function PieceShape({ piece }) {
   if (piece === null || piece === undefined) return null;
 
-  const isSmall   = (piece & 1) === 1;     // bit 0
+  const isSmall   = (piece & 1) === 0;     // bit 0: 0=short(small), 1=tall(large)
   const isRed     = (piece & 2) === 2;     // bit 1
   const isSquare  = (piece & 4) === 4;     // bit 2
   const isHollow  = (piece & 8) === 8;     // bit 3
@@ -104,7 +104,7 @@ export default function PieceShape({ piece }) {
 
 function pieceLabel(piece) {
   const attrs = [
-    (piece & 1) ? "short" : "tall",
+    (piece & 1) ? "tall" : "short",
     (piece & 2) ? "dark" : "light",
     (piece & 4) ? "square" : "round",
     (piece & 8) ? "hollow" : "solid",
